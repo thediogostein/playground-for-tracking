@@ -197,6 +197,104 @@ export const onRequestGet: PagesFunction = async (context) => {
         });
       }
 
+      case "movements": {
+        // Movement history for a specific deal
+        const dealId = url.searchParams.get("dealId");
+        if (!dealId) {
+          return new Response(JSON.stringify({ error: "dealId é obrigatório." }), {
+            status: 400,
+            headers: { "Content-Type": "application/json" },
+          });
+        }
+        const movRes = await fetch("https://api.agendor.com.br/v3/deals/movements_history?per_page=100", { headers });
+        const movData = await movRes.json() as any;
+        const movements = (movData.data || []).filter((m: any) => String(m.deal?.id) === dealId);
+        const timeline = movements.map((m: any) => ({
+          event: m.eventType,
+          oldStage: m.oldStage?.name || null,
+          newStage: m.newStage?.name || null,
+          oldStatus: m.oldStatus?.name || null,
+          newStatus: m.newStatus?.name || null,
+          createdAt: m.createdAt,
+        }));
+        return new Response(JSON.stringify({ dealId, movements: timeline }), {
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+
+      case "cohorts": {
+        // Monthly cohorts: deals grouped by startTime month
+        const monthsParam = url.searchParams.get("months") || "";
+        const months = monthsParam ? monthsParam.split(",") : [];
+
+        const dealsRes = await fetch("https://api.agendor.com.br/v3/deals?per_page=100&withCustomFields=true", { headers });
+        const dealsData = await dealsRes.json() as any;
+        const deals = dealsData.data || [];
+
+        const stageOrder = ["Novo_Lead", "Em_Cadencia", "Ja_Conectou", "Em_Agenda", "Fez_Reuniao"];
+
+        // Determine available months from data
+        const monthSet = new Set<string>();
+        for (const d of deals) {
+          const date = d.startTime || d.createdAt;
+          if (date) {
+            const m = date.slice(0, 7); // "2026-01"
+            monthSet.add(m);
+          }
+        }
+        const availableMonths = [...monthSet].sort();
+
+        // Calculate cohort stats per month
+        const cohorts: Record<string, any> = {};
+        for (const m of (months.length > 0 ? months : availableMonths)) {
+          const monthDeals = deals.filter((d: any) => {
+            const date = d.startTime || d.createdAt;
+            return date && date.startsWith(m);
+          });
+          const total = monthDeals.length;
+          if (total === 0) continue;
+
+          const stageCounts: Record<string, number> = {};
+          for (const s of stageOrder) stageCounts[s] = 0;
+          let won = 0;
+          let lost = 0;
+          for (const d of monthDeals) {
+            const stage = d.dealStage?.name || "?";
+            if (stageCounts[stage] !== undefined) stageCounts[stage]++;
+            const status = d.dealStatus?.name;
+            if (status === "Ganho") won++;
+            if (status === "Perdido") lost++;
+          }
+
+          const stages = stageOrder.map(s => ({
+            stage: s,
+            count: stageCounts[s],
+            pct: Math.round(stageCounts[s] / total * 100),
+          }));
+
+          cohorts[m] = { month: m, total, won, lost, stages };
+        }
+
+        // Calculate averages across all cohorts
+        const cohortValues = Object.values(cohorts);
+        const avgTotal = Math.round(cohortValues.reduce((s: number, c: any) => s + c.total, 0) / Math.max(cohortValues.length, 1));
+        const avgWon = Math.round(cohortValues.reduce((s: number, c: any) => s + c.won, 0) / Math.max(cohortValues.length, 1));
+        const avgLost = Math.round(cohortValues.reduce((s: number, c: any) => s + c.lost, 0) / Math.max(cohortValues.length, 1));
+        const avgStages = stageOrder.map(s => ({
+          stage: s,
+          avgPct: Math.round(cohortValues.reduce((sum: number, c: any) => {
+            const st = c.stages.find((x: any) => x.stage === s);
+            return sum + (st ? st.pct : 0);
+          }, 0) / Math.max(cohortValues.length, 1)),
+        }));
+
+        return new Response(JSON.stringify({
+          availableMonths,
+          cohorts,
+          averages: { total: avgTotal, won: avgWon, lost: avgLost, stages: avgStages },
+        }), { headers: { "Content-Type": "application/json" } });
+      }
+
       default:
         return new Response(JSON.stringify({ error: "Tipo de relatório inválido." }), {
           status: 400,

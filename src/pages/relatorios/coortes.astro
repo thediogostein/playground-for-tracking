@@ -1,0 +1,143 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+---
+
+<BaseLayout title="Coortes Mensais — Relatórios" description="Comparativo mensal de conversão por coorte">
+  <div class="space-y-6">
+    <div class="flex items-center gap-4">
+      <a href="/relatorios" class="text-sm text-muted-foreground hover:text-primary transition-colors">&larr; Relatórios</a>
+      <h1 class="text-3xl font-bold tracking-tight">📅 Coortes Mensais</h1>
+    </div>
+
+    <div class="flex items-center justify-between mb-2">
+      <span id="refresh-status" class="text-xs text-muted-foreground">⏳ Carregando...</span>
+      <button id="refresh-btn" onclick="loadCohorts()" class="text-xs px-3 py-1 rounded border border-border hover:bg-muted transition-colors">🔄 Atualizar</button>
+    </div>
+
+    <div id="report-cohorts" class="space-y-6">
+      <!-- Comparison table -->
+      <div class="rounded-xl border bg-card p-5 overflow-x-auto">
+        <h2 class="font-semibold mb-4">📊 Comparativo por Coorte</h2>
+        <div id="cohorts-table"></div>
+      </div>
+
+      <!-- Averages & Forecast -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="rounded-xl border bg-card p-5">
+          <h2 class="font-semibold mb-4">📈 Médias das Coortes</h2>
+          <div id="averages-chart"></div>
+        </div>
+        <div class="rounded-xl border bg-card p-5">
+          <h2 class="font-semibold mb-4">🔮 Previsão</h2>
+          <div id="forecast-box"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</BaseLayout>
+
+<script>
+  const stageOrder = ["Novo_Lead", "Em_Cadencia", "Ja_Conectou", "Em_Agenda", "Fez_Reuniao"];
+
+  function monthLabel(m: string): string {
+    const [y, mo] = m.split('-');
+    const names = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+    return names[parseInt(mo)-1] + '/' + y.slice(2);
+  }
+
+  async function loadCohorts() {
+    try {
+      const res = await fetch('/api/reports?type=cohorts');
+      const data = await res.json();
+
+      if (data.error) { document.getElementById('report-cohorts')!.innerHTML = '<p class="text-red-500">Erro: '+data.error+'</p>'; return; }
+
+      const cohorts = data.cohorts || {};
+      const averages = data.averages || { stages: [] };
+      const months = Object.keys(cohorts).sort();
+      const monthLabels = months.map(monthLabel);
+
+      if (months.length === 0) {
+        document.getElementById('cohorts-table')!.innerHTML = '<p class="text-muted-foreground text-sm">Nenhuma coorte com dados suficientes. Popule o CRM com deals de meses diferentes.</p>';
+        return;
+      }
+
+      // ── Cohorts comparison table ──
+      const tableEl = document.getElementById('cohorts-table')!;
+      let html = '<div class="overflow-x-auto"><table class="w-full text-sm">';
+      html += '<thead><tr class="border-b"><th class="text-left p-2">Métrica</th>';
+      for (const m of monthLabels) html += '<th class="text-center p-2 font-mono">' + m + '</th>';
+      html += '<th class="text-center p-2 font-bold bg-muted/30">Média</th>';
+      html += '</tr></thead><tbody>';
+
+      // Total row
+      html += '<tr class="border-b"><td class="p-2 font-medium">Total leads</td>';
+      const totals: number[] = [];
+      for (const m of months) {
+        totals.push(cohorts[m].total);
+        html += '<td class="text-center p-2 font-mono font-bold text-lg">' + cohorts[m].total + '</td>';
+      }
+      html += '<td class="text-center p-2 font-mono font-bold bg-muted/30">' + averages.total + '</td></tr>';
+
+      // Stage rows
+      for (const s of stageOrder) {
+        html += '<tr class="border-b"><td class="p-2 font-medium">' + s.replace(/_/g,' ') + '</td>';
+        for (const m of months) {
+          const st = cohorts[m].stages.find((x: any) => x.stage === s);
+          const count = st ? st.count : 0;
+          const pct = st ? st.pct : 0;
+          html += '<td class="text-center p-2">' + count + ' <span class="text-xs text-muted-foreground">(' + pct + '%)</span></td>';
+        }
+        const avg = averages.stages.find((x: any) => x.stage === s);
+        html += '<td class="text-center p-2 font-bold bg-muted/30">' + (avg ? avg.avgPct + '%' : '—') + '</td>';
+        html += '</tr>';
+      }
+
+      // Won / Lost
+      html += '<tr class="border-b bg-green-50/20 dark:bg-green-900/10"><td class="p-2 font-medium text-green-600">Ganhos</td>';
+      for (const m of months) {
+        html += '<td class="text-center p-2 font-bold text-green-600">' + cohorts[m].won + ' <span class="text-xs">(' + Math.round(cohorts[m].won/cohorts[m].total*100) + '%)</span></td>';
+      }
+      html += '<td class="text-center p-2 font-bold bg-muted/30">' + averages.won + '</td></tr>';
+
+      html += '<tr class="border-b bg-red-50/20 dark:bg-red-900/10"><td class="p-2 font-medium text-red-600">Perdidos</td>';
+      for (const m of months) {
+        html += '<td class="text-center p-2 font-bold text-red-600">' + cohorts[m].lost + ' <span class="text-xs">(' + Math.round(cohorts[m].lost/cohorts[m].total*100) + '%)</span></td>';
+      }
+      html += '<td class="text-center p-2 font-bold bg-muted/30">' + averages.lost + '</td></tr>';
+
+      html += '</tbody></table></div>';
+      tableEl.innerHTML = html;
+
+      // ── Averages chart ──
+      const avgEl = document.getElementById('averages-chart')!;
+      let ahtml = '<div class="space-y-2">';
+      for (const s of averages.stages) {
+        ahtml += '<div class="flex items-center gap-2"><span class="text-xs w-24">' + s.stage.replace(/_/g,' ') + '</span>';
+        ahtml += '<div class="flex-1 h-4 bg-muted rounded overflow-hidden"><div class="h-full bg-purple-500 rounded" style="width:' + s.avgPct + '%"></div></div>';
+        ahtml += '<span class="text-xs font-mono w-10 text-right">' + s.avgPct + '%</span></div>';
+      }
+      ahtml += '</div>';
+      avgEl.innerHTML = ahtml;
+
+      // ── Forecast ──
+      const forecastEl = document.getElementById('forecast-box')!;
+      const latestMonth = months[months.length - 1];
+      const latestTotal = cohorts[latestMonth]?.total || 0;
+      let fhtml = '<p class="text-xs text-muted-foreground mb-3">Baseado nas médias das coortes anteriores, com <b>' + latestTotal + ' leads</b> no mês atual:</p>';
+      fhtml += '<div class="space-y-2">';
+      for (const s of averages.stages) {
+        const forecast = Math.round(latestTotal * s.avgPct / 100);
+        fhtml += '<div class="flex items-center justify-between"><span class="text-sm">' + s.stage.replace(/_/g,' ') + '</span><span class="font-mono font-bold">~' + forecast + ' leads</span></div>';
+      }
+      fhtml += '</div>';
+      forecastEl.innerHTML = fhtml;
+
+    } catch (err) {
+      document.getElementById('report-cohorts')!.innerHTML = '<p class="text-red-500">Erro ao carregar dados.</p>';
+    }
+    document.getElementById('refresh-status')!.textContent = '🟢 Atualizado ' + new Date().toLocaleTimeString('pt-BR');
+  }
+  loadCohorts();
+  setInterval(loadCohorts, 30000);
+</script>
