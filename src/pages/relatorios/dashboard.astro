@@ -9,6 +9,10 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
       <h1 class="text-3xl font-bold tracking-tight">📈 Dashboard</h1>
     </div>
 
+    <div class="flex items-center justify-between mb-2">
+      <span id="refresh-status" class="text-xs text-muted-foreground">⏳ Carregando...</span>
+      <button id="refresh-btn" onclick="loadDashboard()" class="text-xs px-3 py-1 rounded border border-border hover:bg-muted transition-colors">🔄 Atualizar</button>
+    </div>
     <div id="report-dashboard" class="space-y-6">
       <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div class="rounded-xl border bg-card p-5"><div class="text-xs text-muted-foreground uppercase tracking-wide">Total Deals</div><div id="stat-total" class="text-3xl font-bold mt-2">—</div></div>
@@ -87,6 +91,8 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
     } catch (err) {
       document.getElementById('report-dashboard')!.innerHTML = '<p class="text-red-500">Erro ao carregar dados.</p>';
     }
+    document.getElementById('refresh-status')!.textContent = '🟢 Atualizado ' + new Date().toLocaleTimeString('pt-BR');
   }
   loadDashboard();
+  setInterval(loadDashboard, 30000);
 </script>

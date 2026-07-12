@@ -9,6 +9,10 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
       <h1 class="text-3xl font-bold tracking-tight">📣 Marketing — Atribuição UTM</h1>
     </div>
 
+    <div class="flex items-center justify-between mb-2">
+      <span id="refresh-status" class="text-xs text-muted-foreground">⏳ Carregando...</span>
+      <button id="refresh-btn" onclick="loadMarketing()" class="text-xs px-3 py-1 rounded border border-border hover:bg-muted transition-colors">🔄 Atualizar</button>
+    </div>
     <div id="report-marketing" class="space-y-6">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div class="rounded-xl border bg-card p-5">
@@ -97,6 +101,8 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
     } catch (err) {
       document.getElementById('report-marketing')!.innerHTML = '<p class="text-red-500">Erro ao carregar dados.</p>';
     }
+    document.getElementById('refresh-status')!.textContent = '🟢 Atualizado ' + new Date().toLocaleTimeString('pt-BR');
   }
   loadMarketing();
+  setInterval(loadMarketing, 30000);
 </script>

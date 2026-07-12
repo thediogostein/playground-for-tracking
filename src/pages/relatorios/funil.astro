@@ -9,6 +9,10 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
       <h1 class="text-3xl font-bold tracking-tight">🔽 Funil de Vendas</h1>
     </div>
 
+    <div class="flex items-center justify-between mb-2">
+      <span id="refresh-status" class="text-xs text-muted-foreground">⏳ Carregando...</span>
+      <button id="refresh-btn" onclick="loadFunnel()" class="text-xs px-3 py-1 rounded border border-border hover:bg-muted transition-colors">🔄 Atualizar</button>
+    </div>
     <div id="report-funnel" class="space-y-6">
       <!-- Matrix table -->
       <div class="rounded-xl border bg-card p-5 overflow-x-auto">
@@ -90,6 +94,8 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
     } catch (err) {
       document.getElementById('report-funnel')!.innerHTML = '<p class="text-red-500">Erro ao carregar dados.</p>';
     }
+    document.getElementById('refresh-status')!.textContent = '🟢 Atualizado ' + new Date().toLocaleTimeString('pt-BR');
   }
   loadFunnel();
+  setInterval(loadFunnel, 30000);
 </script>
