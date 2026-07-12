@@ -102,7 +102,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
         const emoji = stageEmojis[d.stage] || '•';
         const badge = statusColors[d.status] || 'bg-gray-100';
         const created = d.createdAt ? new Date(d.createdAt).toLocaleDateString('pt-BR') : '—';
-        html += '<tr class="border-b hover:bg-muted/20 cursor-pointer" onclick="loadMovements(' + d.id + ', this)">';
+        html += '<tr class="border-b hover:bg-muted/20 cursor-pointer deal-row" data-deal-id="' + d.id + '">';
         html += '<td class="p-3 font-medium">' + d.title + '</td>';
         html += '<td class="p-3 text-muted-foreground">' + (d.org || '—') + '</td>';
         html += '<td class="p-3 text-center text-xs">' + emoji + ' ' + d.stage.replace(/_/g,' ') + '</td>';
@@ -117,6 +117,14 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
       html += '</tbody></table></div>';
       html += '<p class="text-xs text-muted-foreground mt-2">💡 Clique em uma linha para ver o histórico de movimentações.</p>';
       container.innerHTML = html;
+
+      // Event delegation — click on any deal row
+      container.querySelector('table')?.addEventListener('click', (e) => {
+        const row = (e.target as HTMLElement).closest('.deal-row') as HTMLElement;
+        if (!row) return;
+        const dealId = parseInt(row.dataset.dealId || '0');
+        loadMovements(dealId, row);
+      });
     } catch (err) {
       document.getElementById('report-deals')!.innerHTML = '<p class="text-red-500">Erro ao carregar dados.</p>';
     }
