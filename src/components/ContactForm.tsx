@@ -192,10 +192,14 @@ export default function ContactForm() {
       currentStep: STEPS.length,
     });
 
+    // Get Turnstile token
+    const turnstileToken = (window as any).turnstile?.getResponse() || "";
+
     // Prepend +55 for Brazil
     const submitData = {
       ...formData,
       whatsapp: "+55" + formData.phone.replace(/\D/g, ""),
+      "cf-turnstile-response": turnstileToken,
     };
 
     try {
@@ -344,6 +348,11 @@ export default function ContactForm() {
                 <p className="text-sm text-destructive text-center animate-in slide-in-from-top-2">
                   {error}
                 </p>
+              )}
+
+              {/* Turnstile widget on last step */}
+              {isLast && status !== "success" && (
+                <div className="cf-turnstile mt-3 flex justify-center" data-sitekey="0x4AAAAAAD0X41y4bQf0QhgW" data-theme="light" />
               )}
             </div>
           )}

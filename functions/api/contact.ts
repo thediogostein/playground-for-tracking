@@ -192,35 +192,33 @@ export const onRequestPost: PagesFunction = async (context) => {
     );
   }
 
-  // ---- Turnstile verification (if token provided) ----
-  // Uncomment and set TURNSTILE_SECRET_KEY secret to enable:
-  //
-  // const token = body["cf-turnstile-response"];
-  // if (!token) {
-  //   return new Response(
-  //     JSON.stringify({ success: false, error: "Verificação anti-bot necessária." }),
-  //     { status: 400, headers },
-  //   );
-  // }
-  // const turnstileResult = await fetch(
-  //   "https://challenges.cloudflare.com/turnstile/v0/siteverify",
-  //   {
-  //     method: "POST",
-  //     headers: { "Content-Type": "application/json" },
-  //     body: JSON.stringify({
-  //       secret: context.env.TURNSTILE_SECRET_KEY,
-  //       response: token,
-  //       remoteip: ip,
-  //     }),
-  //   },
-  // );
-  // const turnstileData = await turnstileResult.json() as { success: boolean };
-  // if (!turnstileData.success) {
-  //   return new Response(
-  //     JSON.stringify({ success: false, error: "Verificação anti-bot falhou." }),
-  //     { status: 400, headers },
-  //   );
-  // }
+  // ---- Turnstile verification ----
+  const token = body["cf-turnstile-response"];
+  if (!token) {
+    return new Response(
+      JSON.stringify({ success: false, error: "Verificação anti-bot necessária." }),
+      { status: 400, headers },
+    );
+  }
+  const turnstileResult = await fetch(
+    "https://challenges.cloudflare.com/turnstile/v0/siteverify",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        secret: (context.env as any).TURNSTILE_SECRET_KEY,
+        response: token,
+        remoteip: ip,
+      }),
+    },
+  );
+  const turnstileData = await turnstileResult.json() as { success: boolean };
+  if (!turnstileData.success) {
+    return new Response(
+      JSON.stringify({ success: false, error: "Verificação anti-bot falhou. Tente novamente." }),
+      { status: 400, headers },
+    );
+  }
 
   // ---- Sanitize & process ----
   const submission = {
