@@ -277,6 +277,21 @@ export const onRequestPost: PagesFunction = async (context) => {
     console.log("[contact] Email not configured. Set RESEND_API_KEY secret.");
   }
 
+  // ---- Save to Google Sheets (if configured) ----
+  const sheetUrl = (context.env as any).GOOGLE_SHEET_WEBHOOK_URL;
+  if (sheetUrl) {
+    try {
+      await fetch(sheetUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(submission),
+      });
+      console.log("[contact] Saved to Google Sheets");
+    } catch (sheetErr) {
+      console.error("[contact] Google Sheets save failed:", sheetErr);
+    }
+  }
+
   // ---- Respond ----
   return new Response(
     JSON.stringify({
