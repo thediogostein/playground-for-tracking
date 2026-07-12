@@ -57,5 +57,27 @@ const { title, description = "Site para estudo de tracking com GTM" } = Astro.pr
     <footer class="border-t py-6 text-center text-sm text-muted-foreground">
       &copy; {new Date().getFullYear()} Tracking Lab — Site para estudo de GTM
     </footer>
+
+    <!-- Agendor WhatsApp Widget -->
+    <script>
+      window.WidgetWhatsConfig = {
+        "userId": 983941,
+        "accountId": 789667,
+        "funnelId": 900827,
+        "sequenceId": 1,
+        "whatsappNumber": "+5554999704445",
+        "companyName": "123zap",
+        "whatsappMessage": "Olá, vim do site e gostaria de mais informações.",
+        "entity": "organization",
+        "deal": true,
+        "fields": [
+          { "name": "name", "label": "Nome", "type": "text", "required": true, "customField": false },
+          { "name": "email", "label": "E-mail", "type": "email", "required": true, "customField": false },
+          { "name": "whatsapp", "label": "WhatsApp", "type": "text", "required": true, "customField": false },
+          { "name": "legalName", "label": "Nome da Empresa", "type": "text", "required": true, "customField": false }
+        ]
+      };
+    </script>
+    <script src="https://widgets.agendor.com.br/whatsapp.js" defer></script>
   </body>
 </html>

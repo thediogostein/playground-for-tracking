@@ -228,7 +228,10 @@ export default function ContactForm() {
     };
 
     try {
-      const response = await fetch("/api/contact", {
+      const apiUrl = window.location.hostname === "localhost"
+        ? "https://playground-for-tracking.pages.dev/api/contact"
+        : "/api/contact";
+      const response = await fetch(apiUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(submitData),
