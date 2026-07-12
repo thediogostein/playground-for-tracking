@@ -336,7 +336,17 @@ export const onRequestPost: PagesFunction = async (context) => {
         const dealRes = await fetch(`https://api.agendor.com.br/v3/organizations/${orgId}/deals`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Token ${agendorToken}` },
-          body: JSON.stringify({ title: `${submission.name} - ${submission.company}`, funnel: 900827 }),
+          body: JSON.stringify({
+            title: `${submission.name} - ${submission.company}`,
+            funnel: 900827,
+            customFields: {
+              utm_source: submission.utm_source || "",
+              utm_medium: submission.utm_medium || "",
+              utm_campaign: submission.utm_campaign || "",
+              utm_term: submission.utm_term || "",
+              utm_content: submission.utm_content || "",
+            },
+          }),
         });
         const dealData = await dealRes.json();
         if (dealData.data?.id) console.log('[agendor] deal:', dealData.data.id);
