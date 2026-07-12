@@ -1,0 +1,36 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+---
+
+<BaseLayout title="Tracking Lab — Início">
+  <div class="py-12">
+    <h1 class="mb-4 text-3xl font-bold tracking-tight">👋 Bem-vindo ao Tracking Lab</h1>
+    <p class="mb-3 max-w-2xl text-muted-foreground leading-relaxed">
+      Este é um site simples criado em <strong class="text-foreground">Astro</strong> para servir como
+      laboratório de estudos sobre <strong class="text-foreground">tracking</strong> e
+      <strong class="text-foreground">Google Tag Manager (GTM)</strong>.
+    </p>
+    <p class="mb-8 max-w-2xl text-muted-foreground leading-relaxed">
+      A ideia é ter páginas com diferentes elementos (links, botões, formulários)
+      para praticar a configuração de tags, triggers e variáveis no GTM.
+    </p>
+
+    <a
+      href="/contact"
+      class="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90"
+    >
+      Ir para o formulário de Contato →
+    </a>
+
+    <hr class="my-10 border-border" />
+
+    <h2 class="mb-4 text-xl font-semibold">🧪 O que vamos testar?</h2>
+    <ul class="list-inside list-disc space-y-2 text-muted-foreground">
+      <li>Page view tracking</li>
+      <li>Click tracking em links e botões</li>
+      <li>Form submission tracking</li>
+      <li>Eventos personalizados no dataLayer</li>
+      <li>Variáveis do GTM</li>
+    </ul>
+  </div>
+</BaseLayout>

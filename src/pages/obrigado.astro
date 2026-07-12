@@ -1,0 +1,30 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+---
+
+<BaseLayout title="Tracking Lab — Obrigado!">
+  <div class="flex flex-col items-center py-16 text-center">
+    <div class="mb-6 text-6xl">🎉</div>
+    <h1 class="mb-3 text-3xl font-bold tracking-tight">Obrigado pelo contato!</h1>
+    <p class="mb-8 max-w-md text-muted-foreground leading-relaxed">
+      Recebemos sua mensagem e entraremos em contato em breve pelo WhatsApp
+      ou e-mail informado.
+    </p>
+
+    <a
+      href="/"
+      class="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90"
+    >
+      ← Voltar ao início
+    </a>
+  </div>
+</BaseLayout>
+
+<script>
+  // GTM: page view on thank-you page (conversion tracking)
+  window.dataLayer = window.dataLayer || [];
+  window.dataLayer.push({
+    event: "form_conversion",
+    page: "obrigado",
+  });
+</script>

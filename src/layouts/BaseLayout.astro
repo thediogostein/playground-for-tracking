@@ -1,0 +1,60 @@
+---
+import "../styles/global.css";
+
+export interface Props {
+  title: string;
+  description?: string;
+}
+
+const { title, description = "Site para estudo de tracking com GTM" } = Astro.props;
+---
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" href="/favicon.ico" />
+    <meta name="viewport" content="width=device-width" />
+    <meta name="description" content={description} />
+    <meta name="generator" content={Astro.generator} />
+    <title>{title}</title>
+  </head>
+  <body class="flex min-h-screen flex-col bg-background text-foreground antialiased">
+    <header class="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <nav class="mx-auto flex max-w-5xl items-center gap-6 px-4 py-3">
+        <a href="/" class="mr-auto text-lg font-bold tracking-tight hover:text-primary transition-colors">
+          📊 Tracking Lab
+        </a>
+        <a
+          href="/"
+          class={`text-sm font-medium transition-colors hover:text-primary ${
+            Astro.url.pathname === "/"
+              ? "text-primary border-b-2 border-primary pb-0.5"
+              : "text-muted-foreground"
+          }`}
+        >
+          Início
+        </a>
+        <a
+          href="/contact"
+          class={`text-sm font-medium transition-colors hover:text-primary ${
+            Astro.url.pathname === "/contact"
+              ? "text-primary border-b-2 border-primary pb-0.5"
+              : "text-muted-foreground"
+          }`}
+        >
+          Contato
+        </a>
+      </nav>
+    </header>
+
+    <main class="flex-1 mx-auto w-full max-w-5xl px-4 py-8">
+      <slot />
+    </main>
+
+    <footer class="border-t py-6 text-center text-sm text-muted-foreground">
+      &copy; {new Date().getFullYear()} Tracking Lab — Site para estudo de GTM
+    </footer>
+  </body>
+</html>

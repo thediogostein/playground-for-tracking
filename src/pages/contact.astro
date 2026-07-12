@@ -1,0 +1,15 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import ContactForm from "../components/ContactForm";
+---
+
+<BaseLayout title="Tracking Lab — Contato" description="Formulário de contato multi-step">
+  <div class="py-8 text-center">
+    <h1 class="mb-2 text-3xl font-bold tracking-tight">📬 Entre em Contato</h1>
+    <p class="mx-auto max-w-md text-muted-foreground">
+      Responda <strong>5 perguntas rápidas</strong> e entraremos em contato com você.
+    </p>
+  </div>
+
+  <ContactForm client:only="react" />
+</BaseLayout>
