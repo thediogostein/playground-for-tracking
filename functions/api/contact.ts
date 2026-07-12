@@ -228,6 +228,14 @@ export const onRequestPost: PagesFunction = async (context) => {
   }
 
   // ---- Sanitize & process ----
+  const utms = {
+    utm_source: sanitize(((body as any).utm_source || "").trim()),
+    utm_medium: sanitize(((body as any).utm_medium || "").trim()),
+    utm_campaign: sanitize(((body as any).utm_campaign || "").trim()),
+    utm_term: sanitize(((body as any).utm_term || "").trim()),
+    utm_content: sanitize(((body as any).utm_content || "").trim()),
+  };
+
   const submission = {
     name: sanitize(body.name.trim()),
     whatsapp: sanitize(body.whatsapp.trim()),
@@ -236,6 +244,7 @@ export const onRequestPost: PagesFunction = async (context) => {
     revenue: body.revenue,
     ip,
     timestamp: new Date().toISOString(),
+    ...utms,
   };
 
   // ---- Send email notification via Resend (free tier: 100/day) ----
@@ -308,7 +317,7 @@ export const onRequestPost: PagesFunction = async (context) => {
         headers: { 'Content-Type': 'application/json', 'Authorization': `Token ${agendorToken}` },
         body: JSON.stringify({
           name: submission.company,
-          description: `Lead via formulário. Faturamento: ${submission.revenue}`,
+          description: `Lead via formulário${utms.utm_source ? ` | Source: ${utms.utm_source}` : ""}${utms.utm_campaign ? ` | Campanha: ${utms.utm_campaign}` : ""}. Faturamento: ${submission.revenue}`,
           contact: { email: submission.email, whatsapp: submission.whatsapp },
         }),
       });

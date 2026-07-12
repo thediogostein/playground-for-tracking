@@ -8,6 +8,20 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { cn } from "@/lib/utils";
 
 // ---------------------------------------------------------------------------
+// UTM capture from URL
+// ---------------------------------------------------------------------------
+function getUTMs(): Record<string, string> {
+  const params = new URLSearchParams(window.location.search);
+  return {
+    utm_source: params.get("utm_source") || "",
+    utm_medium: params.get("utm_medium") || "",
+    utm_campaign: params.get("utm_campaign") || "",
+    utm_term: params.get("utm_term") || "",
+    utm_content: params.get("utm_content") || "",
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 interface FormData {
@@ -220,11 +234,13 @@ export default function ContactForm() {
     // Get Turnstile token
     const turnstileToken = (window as any).turnstile?.getResponse() || "";
 
-    // Prepend +55 for Brazil
+    // Prepend +55 for Brazil + add UTMs
+    const utms = getUTMs();
     const submitData = {
       ...formData,
       whatsapp: "+55" + formData.phone.replace(/\D/g, ""),
       "cf-turnstile-response": turnstileToken,
+      ...utms,
     };
 
     try {

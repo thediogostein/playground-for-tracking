@@ -25,6 +25,11 @@ function doPost(e) {
     data.email,                    // Email
     data.company,                  // Empresa
     data.revenue,                  // Faturamento
+    data.utm_source || "",         // UTM Source
+    data.utm_medium || "",         // UTM Medium
+    data.utm_campaign || "",       // UTM Campaign
+    data.utm_term || "",           // UTM Term
+    data.utm_content || "",        // UTM Content
     data.ip || "",                 // IP
   ]);
   
