@@ -210,12 +210,10 @@ export const onRequestGet: PagesFunction = async (context) => {
         const movData = await movRes.json() as any;
         const movements = (movData.data || []).filter((m: any) => String(m.deal?.id) === dealId);
         const timeline = movements.map((m: any) => ({
-          event: m.eventType,
-          oldStage: m.oldStage?.name || null,
-          newStage: m.newStage?.name || null,
-          oldStatus: m.oldStatus?.name || null,
-          newStatus: m.newStatus?.name || null,
-          createdAt: m.createdAt,
+          event: m.event_type,
+          stage: m.deal_stage?.name || null,
+          status: m.deal_status?.name || null,
+          createdAt: m.updated_at,
         }));
         return new Response(JSON.stringify({ dealId, movements: timeline }), {
           headers: { "Content-Type": "application/json" },

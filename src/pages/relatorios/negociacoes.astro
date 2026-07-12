@@ -65,11 +65,13 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
       for (const m of movements) {
         let desc = '';
         if (m.event === 'deal_created') {
-          desc = '🟢 <b>Negociação criada</b>';
+          desc = '🟢 <b>Negociação criada</b> → etapa <b>' + (m.stage || '?').replace(/_/g,' ') + '</b>';
         } else if (m.event === 'stage_changed') {
-          desc = '🔀 De <b>' + (m.oldStage || '?').replace(/_/g,' ') + '</b> → <b>' + (m.newStage || '?').replace(/_/g,' ') + '</b>';
+          desc = '🔀 Etapa alterada para <b>' + (m.stage || '?').replace(/_/g,' ') + '</b>';
         } else if (m.event === 'status_changed') {
-          desc = '🏁 Status: <b>' + (m.oldStatus || '?') + '</b> → <b>' + (m.newStatus || '?') + '</b>';
+          desc = '🏁 Status alterado para <b>' + (m.status || '?') + '</b>';
+        } else {
+          desc = '📌 Evento: <b>' + (m.event || '?') + '</b>';
         }
         const date = m.createdAt ? new Date(m.createdAt).toLocaleString('pt-BR') : '?';
         container.innerHTML += '<div class="flex items-center gap-3 text-xs py-1 border-b border-border/30"><span class="text-muted-foreground w-36">' + date + '</span><span>' + desc + '</span></div>';
