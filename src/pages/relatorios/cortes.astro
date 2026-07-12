@@ -2,11 +2,11 @@
 import BaseLayout from "../../layouts/BaseLayout.astro";
 ---
 
-<BaseLayout title="Coortes Mensais — Relatórios" description="Comparativo mensal de conversão por coorte">
+<BaseLayout title="Cortes Mensais — Relatórios" description="Comparativo mensal de conversão por corte">
   <div class="space-y-6">
     <div class="flex items-center gap-4">
       <a href="/relatorios" class="text-sm text-muted-foreground hover:text-primary transition-colors">&larr; Relatórios</a>
-      <h1 class="text-3xl font-bold tracking-tight">📅 Coortes Mensais</h1>
+      <h1 class="text-3xl font-bold tracking-tight">📅 Cortes Mensais</h1>
     </div>
 
     <div class="flex items-center justify-between mb-2">
@@ -17,14 +17,14 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
     <div id="report-cohorts" class="space-y-6">
       <!-- Comparison table -->
       <div class="rounded-xl border bg-card p-5 overflow-x-auto">
-        <h2 class="font-semibold mb-4">📊 Comparativo por Coorte</h2>
+        <h2 class="font-semibold mb-4">📊 Comparativo por Corte</h2>
         <div id="cohorts-table"></div>
       </div>
 
       <!-- Averages & Forecast -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div class="rounded-xl border bg-card p-5">
-          <h2 class="font-semibold mb-4">📈 Médias das Coortes</h2>
+          <h2 class="font-semibold mb-4">📈 Médias dos Cortes</h2>
           <div id="averages-chart"></div>
         </div>
         <div class="rounded-xl border bg-card p-5">
@@ -58,7 +58,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
       const monthLabels = months.map(monthLabel);
 
       if (months.length === 0) {
-        document.getElementById('cohorts-table')!.innerHTML = '<p class="text-muted-foreground text-sm">Nenhuma coorte com dados suficientes. Popule o CRM com deals de meses diferentes.</p>';
+        document.getElementById('cohorts-table')!.innerHTML = '<p class="text-muted-foreground text-sm">Nenhum corte com dados suficientes. Popule o CRM com deals de meses diferentes.</p>';
         return;
       }
 
@@ -124,7 +124,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
       const forecastEl = document.getElementById('forecast-box')!;
       const latestMonth = months[months.length - 1];
       const latestTotal = cohorts[latestMonth]?.total || 0;
-      let fhtml = '<p class="text-xs text-muted-foreground mb-3">Baseado nas médias das coortes anteriores, com <b>' + latestTotal + ' leads</b> no mês atual:</p>';
+      let fhtml = '<p class="text-xs text-muted-foreground mb-3">Baseado nas médias das cortes anteriores, com <b>' + latestTotal + ' leads</b> no mês atual:</p>';
       fhtml += '<div class="space-y-2">';
       for (const s of averages.stages) {
         const forecast = Math.round(latestTotal * s.avgPct / 100);
