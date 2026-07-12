@@ -299,56 +299,34 @@ export const onRequestPost: PagesFunction = async (context) => {
     }
   }
 
-  // ---- Create deal in Agendor CRM (if configured) ----
+    // ---- Create deal in Agendor CRM (if configured) ----
   const agendorToken = (context.env as any).AGENDOR_API_TOKEN;
   if (agendorToken) {
     try {
-      // Create organization
-      const orgRes = await fetch("https://api.agendor.com.br/v3/organizations", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Token ${agendorToken}`,
-        },
+      const orgRes = await fetch('https://api.agendor.com.br/v3/organizations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Token ${agendorToken}` },
         body: JSON.stringify({
           name: submission.company,
-          contacts: [
-            {
-              name: submission.name,
-              emails: [{ email: submission.email }],
-              phones: [{ number: submission.whatsapp, type: "whatsapp" }],
-            },
-          ],
+          description: `Lead via formulário. Faturamento: ${submission.revenue}`,
+          contact: { email: submission.email, whatsapp: submission.whatsapp },
         }),
       });
-      const orgData = await orgRes.json() as { data?: { id: number } };
-      if (orgData.data?.id) {
-        console.log("[contact] Agendor organization created:", orgData.data.id);
-
-        // Create deal linked to organization
-        await fetch("https://api.agendor.com.br/v3/deals", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Token ${agendorToken}`,
-          },
-          body: JSON.stringify({
-            title: `${submission.name} - ${submission.company}`,
-            organizationId: orgData.data.id,
-            funnelId: 900827,
-            value: submission.revenue,
-            contact: {
-              name: submission.name,
-              emails: [{ email: submission.email }],
-              phones: [{ number: submission.whatsapp, type: "whatsapp" }],
-            },
-          }),
+      const orgData = await orgRes.json();
+      if (orgData.errors) console.error('[agendor] org error:', JSON.stringify(orgData.errors));
+      const orgId = orgData.data?.id;
+      if (orgId) {
+        console.log('[agendor] org:', orgId);
+        const dealRes = await fetch(`https://api.agendor.com.br/v3/organizations/${orgId}/deals`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Token ${agendorToken}` },
+          body: JSON.stringify({ title: `${submission.name} - ${submission.company}`, funnel: 900827 }),
         });
-        console.log("[contact] Agendor deal created");
+        const dealData = await dealRes.json();
+        if (dealData.data?.id) console.log('[agendor] deal:', dealData.data.id);
+        else console.error('[agendor] deal failed:', JSON.stringify(dealData));
       }
-    } catch (agendorErr) {
-      console.error("[contact] Agendor integration failed:", agendorErr);
-    }
+    } catch (e) { console.error('[agendor] error:', e); }
   }
 
   // ---- Respond ----
