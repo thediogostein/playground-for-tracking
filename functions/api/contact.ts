@@ -195,25 +195,17 @@ export const onRequestPost: PagesFunction = async (context) => {
   // ---- Turnstile verification ----
   const token = body["cf-turnstile-response"];
   const turnstileSecret = (context.env as any).TURNSTILE_SECRET_KEY;
+  const testMode = (context.env as any).TURNSTILE_TEST_MODE === "true";
 
-  // Accept Turnstile test keys (always-pass for automated testing)
-  const testSecrets = [
-    "1x0000000000000000000000000000000AA",
-    "2x0000000000000000000000000000000AA",
-  ];
+  // Test mode: skip Turnstile (for automated testing)
+  if (!testMode) {
+    if (!token) {
+      return new Response(
+        JSON.stringify({ success: false, error: "Verificação anti-bot necessária." }),
+        { status: 400, headers },
+      );
+    }
 
-  if (!token) {
-    return new Response(
-      JSON.stringify({ success: false, error: "Verificação anti-bot necessária." }),
-      { status: 400, headers },
-    );
-  }
-
-  // Test mode: always pass with test secret keys
-  const isTestMode = testSecrets.includes(turnstileSecret);
-  let turnstileValid = isTestMode;
-
-  if (!isTestMode) {
     const turnstileResult = await fetch(
       "https://challenges.cloudflare.com/turnstile/v0/siteverify",
       {
@@ -227,14 +219,12 @@ export const onRequestPost: PagesFunction = async (context) => {
       },
     );
     const turnstileData = await turnstileResult.json() as { success: boolean };
-    turnstileValid = turnstileData.success;
-  }
-
-  if (!turnstileValid) {
-    return new Response(
-      JSON.stringify({ success: false, error: "Verificação anti-bot falhou. Tente novamente." }),
-      { status: 400, headers },
-    );
+    if (!turnstileData.success) {
+      return new Response(
+        JSON.stringify({ success: false, error: "Verificação anti-bot falhou. Tente novamente." }),
+        { status: 400, headers },
+      );
+    }
   }
 
   // ---- Sanitize & process ----

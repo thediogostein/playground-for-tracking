@@ -32,7 +32,7 @@ echo ""
 
 # 1. Sem token Turnstile (deve bloquear)
 check "Bloqueia sem Turnstile" POST "$BASE/api/contact" 400 "anti-bot" \
-  '{"name":"T","whatsapp":"+5511999999999","email":"t@t.com","company":"T","revenue":"ate-10k"}'
+  '{"name":"Teste Bot","whatsapp":"+5511999999999","email":"bot@test.com","company":"Bot Co","revenue":"ate-10k"}'
 
 # 2. Com token Turnstile teste (deve passar)
 check "Aceita com token teste" POST "$BASE/api/contact" 200 "sucesso" \
