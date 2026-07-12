@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { ArrowRight, ArrowLeft, Check, User, Phone, Mail, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -141,6 +141,31 @@ export default function ContactForm() {
 
   const currentStep = STEPS[step];
   const isLast = step === STEPS.length - 1;
+  const turnstileRef = useRef<HTMLDivElement>(null);
+  const turnstileRendered = useRef(false);
+
+  // Render Turnstile widget when reaching the last step
+  useEffect(() => {
+    if (isLast && turnstileRef.current && !turnstileRendered.current) {
+      const tid = setTimeout(() => {
+        if ((window as any).turnstile && turnstileRef.current) {
+          (window as any).turnstile.render(turnstileRef.current, {
+            sitekey: "0x4AAAAAAD0X41y4bQf0QhgW",
+            theme: "light",
+          });
+          turnstileRendered.current = true;
+        }
+      }, 100);
+      return () => clearTimeout(tid);
+    }
+    // Reset when leaving last step
+    if (!isLast) {
+      turnstileRendered.current = false;
+      if (turnstileRef.current) {
+        turnstileRef.current.innerHTML = "";
+      }
+    }
+  }, [isLast]);
 
   const updateField = useCallback(
     (value: string) => {
@@ -352,7 +377,7 @@ export default function ContactForm() {
 
               {/* Turnstile widget on last step */}
               {isLast && status !== "success" && (
-                <div className="cf-turnstile mt-3 flex justify-center" data-sitekey="0x4AAAAAAD0X41y4bQf0QhgW" data-theme="light" />
+                <div ref={turnstileRef} className="mt-3 flex justify-center" />
               )}
             </div>
           )}
