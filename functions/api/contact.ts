@@ -308,7 +308,7 @@ export const onRequestPost: PagesFunction = async (context) => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${agendorToken}`,
+          "Authorization": `Token ${agendorToken}`,
         },
         body: JSON.stringify({
           name: submission.company,
@@ -330,7 +330,7 @@ export const onRequestPost: PagesFunction = async (context) => {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${agendorToken}`,
+            "Authorization": `Token ${agendorToken}`,
           },
           body: JSON.stringify({
             title: `${submission.name} - ${submission.company}`,
