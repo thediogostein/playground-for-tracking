@@ -1,0 +1,115 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+---
+
+<BaseLayout title="Metas do Funil — Relatórios" description="Metas em cascata por etapa do funil">
+  <div class="space-y-6">
+    <div class="flex items-center gap-4">
+      <a href="/relatorios" class="text-sm text-muted-foreground hover:text-primary transition-colors">&larr; Relatórios</a>
+      <h1 class="text-3xl font-bold tracking-tight">📊 Metas do Funil</h1>
+    </div>
+
+    <div class="flex items-center justify-between mb-2">
+      <span id="refresh-status" class="text-xs text-muted-foreground">⏳ Carregando...</span>
+      <button id="refresh-btn" onclick="loadMetas()" class="text-xs px-3 py-1 rounded border border-border hover:bg-muted transition-colors">🔄 Atualizar</button>
+    </div>
+
+    <div id="report-metas" class="space-y-6">
+      <!-- Funnel Table -->
+      <div class="rounded-xl border bg-card p-5 overflow-x-auto">
+        <h2 class="font-semibold mb-4">🔽 Funil em Cascata</h2>
+        <div id="funnel-table"></div>
+      </div>
+
+      <!-- Indicators -->
+      <div class="rounded-xl border bg-card p-5">
+        <h2 class="font-semibold mb-4">📈 Indicadores</h2>
+        <div id="indicators-grid"></div>
+      </div>
+    </div>
+  </div>
+</BaseLayout>
+
+<script>
+  function statusBadge(pct: number): string {
+    if (pct >= 80) return "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300";
+    if (pct >= 50) return "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300";
+    return "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300";
+  }
+
+  function gapColor(gap: number): string {
+    if (gap >= 0) return "text-green-500";
+    return "text-red-500";
+  }
+
+  function progressColor(pct: number): string {
+    if (pct >= 80) return "bg-green-500";
+    if (pct >= 50) return "bg-yellow-500";
+    return "bg-red-500";
+  }
+
+  function gapSign(gap: number): string {
+    if (gap > 0) return "+" + gap;
+    return String(gap);
+  }
+
+  async function loadMetas() {
+    try {
+      const res = await fetch('/api/reports?type=metas');
+      const data = await res.json();
+
+      if (data.error) { document.getElementById('report-metas')!.innerHTML = '<p class="text-red-500">Erro: '+data.error+'</p>'; return; }
+
+      // ── Funnel table ──
+      const tableEl = document.getElementById('funnel-table')!;
+      let html = '<div class="overflow-x-auto"><table class="w-full text-sm">';
+      html += '<thead><tr class="border-b">';
+      html += '<th class="text-left p-2">Etapa</th>';
+      html += '<th class="text-center p-2">Depende de</th>';
+      html += '<th class="text-center p-2">Meta</th>';
+      html += '<th class="text-center p-2">Real</th>';
+      html += '<th class="text-center p-2">% Meta</th>';
+      html += '<th class="text-center p-2">Progresso</th>';
+      html += '<th class="text-center p-2">Gap</th>';
+      html += '</tr></thead><tbody>';
+
+      for (const f of data.funnel) {
+        const badge = statusBadge(f.pct);
+        const pColor = progressColor(f.pct);
+        const gColor = gapColor(f.gap);
+        html += '<tr class="border-b hover:bg-muted/30">';
+        html += '<td class="p-2 font-semibold">' + f.stage.replace(/_/g, ' ') + '</td>';
+        html += '<td class="text-center p-2 text-muted-foreground text-xs">' + f.dependsOn.replace(/_/g, ' ') + ' (' + f.previousReal + ')</td>';
+        html += '<td class="text-center p-2 font-mono font-bold">' + f.target + '</td>';
+        html += '<td class="text-center p-2 font-mono text-lg font-bold">' + f.actual + '</td>';
+        html += '<td class="text-center p-2"><span class="px-2 py-0.5 rounded text-xs font-medium ' + badge + '">' + f.pct + '%</span></td>';
+        html += '<td class="p-2 w-40"><div class="h-5 bg-muted rounded overflow-hidden"><div class="h-full ' + pColor + ' rounded transition-all duration-500" style="width:' + Math.min(f.pct, 100) + '%"></div></div></td>';
+        html += '<td class="text-center p-2 font-mono font-bold ' + gColor + '">' + gapSign(f.gap) + '</td>';
+        html += '</tr>';
+      }
+
+      html += '</tbody></table></div>';
+      tableEl.innerHTML = html;
+
+      // ── Indicators ──
+      const indicatorsEl = document.getElementById('indicators-grid')!;
+      let ihtml = '<div class="grid grid-cols-2 md:grid-cols-3 gap-3">';
+      for (const ind of data.indicators) {
+        const pctColor = ind.pct >= 50 ? 'text-green-500' : ind.pct >= 25 ? 'text-yellow-500' : 'text-red-500';
+        ihtml += '<div class="rounded-lg border p-4">';
+        ihtml += '<div class="text-xs text-muted-foreground mb-1">' + ind.label + '</div>';
+        ihtml += '<div class="text-2xl font-bold ' + pctColor + '">' + ind.pct + '%</div>';
+        ihtml += '<div class="text-xs text-muted-foreground mt-1">' + ind.numerator + ' de ' + ind.denominator + ' leads</div>';
+        ihtml += '</div>';
+      }
+      ihtml += '</div>';
+      indicatorsEl.innerHTML = ihtml;
+
+    } catch (err) {
+      document.getElementById('report-metas')!.innerHTML = '<p class="text-red-500">Erro ao carregar dados.</p>';
+    }
+    document.getElementById('refresh-status')!.textContent = '🟢 Atualizado ' + new Date().toLocaleTimeString('pt-BR');
+  }
+  loadMetas();
+  setInterval(loadMetas, 30000);
+</script>

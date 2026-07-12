@@ -137,6 +137,66 @@ export const onRequestGet: PagesFunction = async (context) => {
         });
       }
 
+      case "metas": {
+        // Funnel cascade: each stage's target depends on actual count of previous stage
+        const dealsRes = await fetch("https://api.agendor.com.br/v3/deals?per_page=100&withCustomFields=true", { headers });
+        const dealsData = await dealsRes.json() as any;
+        const deals = dealsData.data || [];
+
+        const stageOrder = ["Novo_Lead", "Em_Cadencia", "Ja_Conectou", "Em_Agenda", "Fez_Reuniao"];
+        const targets: Record<string, number> = {
+          "Em_Cadencia": 100,
+          "Ja_Conectou": 60,
+          "Em_Agenda": 30,
+          "Fez_Reuniao": 10,
+        };
+
+        // Count deals per stage
+        const actuals: Record<string, number> = {};
+        for (const s of stageOrder) actuals[s] = 0;
+        const won = deals.filter((d: any) => d.dealStatus?.name === "Ganho").length;
+
+        for (const d of deals) {
+          const stage = d.dealStage?.name || "?";
+          if (actuals[stage] !== undefined) actuals[stage]++;
+        }
+
+        // Build cascade
+        const funnel: any[] = [];
+        for (let i = 1; i < stageOrder.length; i++) {
+          const stage = stageOrder[i];
+          const dependsOn = stageOrder[i - 1];
+          const previousReal = actuals[dependsOn] || 0;
+          const pctTarget = targets[stage] || 0;
+          const target = Math.round(previousReal * pctTarget / 100);
+          const actual = actuals[stage] || 0;
+          const pct = target > 0 ? Math.round(actual / target * 100) : 0;
+          const gap = actual - target;
+
+          funnel.push({ stage, dependsOn, previousReal, target, actual, pct, gap });
+        }
+
+        // Indicators
+        const novoLead = actuals["Novo_Lead"] || 1; // avoid div by zero
+        const fezReuniao = actuals["Fez_Reuniao"] || 0;
+        const emCadencia = actuals["Em_Cadencia"] || 0;
+        const jaConectou = actuals["Ja_Conectou"] || 0;
+        const emAgenda = actuals["Em_Agenda"] || 0;
+
+        const indicators = [
+          { label: "Leads → Vendas", pct: Math.round(won / novoLead * 100), numerator: won, denominator: novoLead },
+          { label: "Leads → Reunião", pct: Math.round(fezReuniao / novoLead * 100), numerator: fezReuniao, denominator: novoLead },
+          { label: "Novo → Cadencia", pct: Math.round(emCadencia / novoLead * 100), numerator: emCadencia, denominator: novoLead },
+          { label: "Cadencia → Conectou", pct: emCadencia > 0 ? Math.round(jaConectou / emCadencia * 100) : 0, numerator: jaConectou, denominator: emCadencia },
+          { label: "Conectou → Agenda", pct: jaConectou > 0 ? Math.round(emAgenda / jaConectou * 100) : 0, numerator: emAgenda, denominator: jaConectou },
+          { label: "Agenda → Reunião", pct: emAgenda > 0 ? Math.round(fezReuniao / emAgenda * 100) : 0, numerator: fezReuniao, denominator: emAgenda },
+        ];
+
+        return new Response(JSON.stringify({ funnel, indicators, won, total: deals.length }), {
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+
       default:
         return new Response(JSON.stringify({ error: "Tipo de relatório inválido." }), {
           status: 400,
