@@ -1,0 +1,102 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+---
+
+<BaseLayout title="Marketing — Relatórios" description="Atribuição de canais UTM">
+  <div class="space-y-6">
+    <div class="flex items-center gap-4">
+      <a href="/relatorios" class="text-sm text-muted-foreground hover:text-primary transition-colors">&larr; Relatórios</a>
+      <h1 class="text-3xl font-bold tracking-tight">📣 Marketing — Atribuição UTM</h1>
+    </div>
+
+    <div id="report-marketing" class="space-y-6">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="rounded-xl border bg-card p-5">
+          <h2 class="font-semibold mb-4">Origem (utm_source)</h2>
+          <div id="chart-source"></div>
+        </div>
+        <div class="rounded-xl border bg-card p-5">
+          <h2 class="font-semibold mb-4">Mídia (utm_medium)</h2>
+          <div id="chart-medium"></div>
+        </div>
+      </div>
+
+      <div class="rounded-xl border bg-card p-5">
+        <h2 class="font-semibold mb-4">Campanhas (utm_campaign)</h2>
+        <div id="chart-campaign"></div>
+      </div>
+    </div>
+  </div>
+</BaseLayout>
+
+<script>
+  async function loadMarketing() {
+    try {
+      const res = await fetch('/api/reports?type=marketing');
+      const data = await res.json();
+
+      if (data.error) { document.getElementById('report-marketing')!.innerHTML = '<p class="text-red-500">Erro: '+data.error+'</p>'; return; }
+
+      function renderSourceChart(containerId: string, stats: Record<string, {total:number,won:number,lost?:number,ongoing?:number,value?:number}>, showValue = false) {
+        const el = document.getElementById(containerId)!;
+        const sorted = Object.entries(stats).sort((a,b) => b[1].total - a[1].total);
+        const maxTotal = Math.max(...sorted.map(([,v]) => v.total), 1);
+
+        let html = '';
+        for (const [name, s] of sorted) {
+          const pctTotal = Math.round(s.total / maxTotal * 100);
+          const convRate = s.total > 0 ? Math.round(s.won / s.total * 100) : 0;
+          html += '<div class="mb-3">';
+          html += '<div class="flex items-center justify-between mb-1"><span class="text-sm font-medium">'+name+'</span><span class="text-xs text-muted-foreground">'+s.total+' leads';
+          if (s.won > 0) html += ' · '+s.won+' ganhos ('+convRate+'%)';
+          if (s.lost !== undefined && s.lost > 0) html += ' · '+s.lost+' perdidos';
+          if (showValue && s.value) html += ' · R$ '+s.value.toLocaleString('pt-BR');
+          html += '</span></div>';
+          html += '<div class="flex h-4 bg-muted rounded overflow-hidden">';
+          if (s.won > 0) html += '<div class="h-full bg-green-500" style="width:'+Math.round(s.won/s.total*100)+'%"></div>';
+          if (s.lost !== undefined && s.lost > 0) html += '<div class="h-full bg-red-500" style="width:'+Math.round((s.lost||0)/s.total*100)+'%"></div>';
+          html += '<div class="h-full bg-blue-400" style="width:'+Math.round((s.total-s.won-(s.lost||0))/s.total*100)+'%"></div>';
+          html += '</div>';
+          html += '<div class="flex gap-3 text-[10px] text-muted-foreground mt-0.5"><span class="text-green-600">█ Ganhos ('+s.won+')</span><span class="text-red-600">█ Perdidos ('+(s.lost||0)+')</span><span class="text-blue-600">█ Andamento ('+(s.total-s.won-(s.lost||0))+')</span></div>';
+          html += '</div>';
+        }
+        el.innerHTML = html;
+      }
+
+      function renderSimpleChart(containerId: string, stats: Record<string, {total:number,won:number}>) {
+        const el = document.getElementById(containerId)!;
+        const sorted = Object.entries(stats).sort((a,b) => b[1].total - a[1].total);
+        const maxTotal = Math.max(...sorted.map(([,v]) => v.total), 1);
+
+        let html = '';
+        for (const [name, s] of sorted) {
+          const pctTotal = Math.round(s.total / maxTotal * 100);
+          const convRate = s.total > 0 ? Math.round(s.won / s.total * 100) : 0;
+          html += '<div class="mb-3">';
+          html += '<div class="flex items-center justify-between mb-1"><span class="text-sm font-medium">'+name+'</span><span class="text-xs text-muted-foreground">'+s.total+' deals · '+convRate+'% conv.</span></div>';
+          html += '<div class="flex h-3 bg-muted rounded overflow-hidden">';
+          if (s.won > 0) html += '<div class="h-full bg-green-500 rounded" style="width:'+pctTotal+'%"></div>';
+          else html += '<div class="h-full bg-blue-400 rounded" style="width:'+pctTotal+'%"></div>';
+          html += '</div></div>';
+        }
+        el.innerHTML = html;
+      }
+
+      renderSourceChart('chart-source', data.sourceStats, true);
+      renderSimpleChart('chart-medium', data.mediumStats);
+
+      // Campaign chart - wider
+      const campaignEl = document.getElementById('chart-campaign')!;
+      const sortedCampaigns = Object.entries(data.campaignStats as Record<string,{total:number,won:number}>).sort((a,b) => b[1].total - a[1].total);
+      campaignEl.innerHTML = '<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">' +
+        sortedCampaigns.map(([name, s]) => {
+          const convRate = s.total > 0 ? Math.round(s.won / s.total * 100) : 0;
+          return '<div class="rounded-lg border p-3"><div class="font-medium text-sm">'+name+'</div><div class="text-xs text-muted-foreground mt-1">'+s.total+' deals · '+s.won+' ganhos</div><div class="mt-2 flex items-center gap-1 text-xs font-mono"><span class="text-green-500">'+convRate+'%</span><span class="text-muted-foreground">conversão</span></div></div>';
+        }).join('') +
+        '</div>';
+    } catch (err) {
+      document.getElementById('report-marketing')!.innerHTML = '<p class="text-red-500">Erro ao carregar dados.</p>';
+    }
+  }
+  loadMarketing();
+</script>

@@ -1,0 +1,92 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+---
+
+<BaseLayout title="Dashboard — Relatórios" description="Dashboard do CRM">
+  <div class="space-y-6">
+    <div class="flex items-center gap-4">
+      <a href="/relatorios" class="text-sm text-muted-foreground hover:text-primary transition-colors">&larr; Relatórios</a>
+      <h1 class="text-3xl font-bold tracking-tight">📈 Dashboard</h1>
+    </div>
+
+    <div id="report-dashboard" class="space-y-6">
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="rounded-xl border bg-card p-5"><div class="text-xs text-muted-foreground uppercase tracking-wide">Total Deals</div><div id="stat-total" class="text-3xl font-bold mt-2">—</div></div>
+        <div class="rounded-xl border bg-card p-5"><div class="text-xs text-muted-foreground uppercase tracking-wide">Em Andamento</div><div id="stat-ongoing" class="text-3xl font-bold mt-2 text-blue-500">—</div></div>
+        <div class="rounded-xl border bg-card p-5"><div class="text-xs text-muted-foreground uppercase tracking-wide">Ganhos</div><div id="stat-won" class="text-3xl font-bold mt-2 text-green-500">—</div></div>
+        <div class="rounded-xl border bg-card p-5"><div class="text-xs text-muted-foreground uppercase tracking-wide">Perdidos</div><div id="stat-lost" class="text-3xl font-bold mt-2 text-red-500">—</div></div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="rounded-xl border bg-card p-5">
+          <h2 class="font-semibold mb-3">Status dos Negócios</h2>
+          <div id="chart-status" class="space-y-2"></div>
+        </div>
+        <div class="rounded-xl border bg-card p-5">
+          <h2 class="font-semibold mb-3">Distribuição no Funil</h2>
+          <div id="chart-stage" class="space-y-2"></div>
+        </div>
+      </div>
+
+      <div class="rounded-xl border bg-card p-5">
+        <h2 class="font-semibold mb-3">Origem dos Leads</h2>
+        <div id="chart-source" class="space-y-2"></div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="rounded-xl border bg-card p-5"><div class="text-xs text-muted-foreground uppercase tracking-wide">Valor Total Pipeline</div><div id="stat-totalvalue" class="text-2xl font-bold mt-2">—</div></div>
+        <div class="rounded-xl border bg-card p-5"><div class="text-xs text-muted-foreground uppercase tracking-wide">Valor Ganho</div><div id="stat-wonvalue" class="text-2xl font-bold mt-2 text-green-500">—</div></div>
+      </div>
+    </div>
+  </div>
+</BaseLayout>
+
+<script>
+  async function loadDashboard() {
+    try {
+      const res = await fetch('/api/reports?type=dashboard');
+      const data = await res.json();
+
+      if (data.error) { document.getElementById('report-dashboard')!.innerHTML = '<p class="text-red-500">Erro: '+data.error+'</p>'; return; }
+
+      // Stats
+      document.getElementById('stat-total')!.textContent = data.total;
+      document.getElementById('stat-ongoing')!.textContent = data.byStatus['Em andamento'] || 0;
+      document.getElementById('stat-won')!.textContent = data.byStatus['Ganho'] || 0;
+      document.getElementById('stat-lost')!.textContent = data.byStatus['Perdido'] || 0;
+      document.getElementById('stat-totalvalue')!.textContent = 'R$ ' + (data.totalValue || 0).toLocaleString('pt-BR');
+      document.getElementById('stat-wonvalue')!.textContent = 'R$ ' + (data.wonValue || 0).toLocaleString('pt-BR');
+
+      // Status chart
+      const statusEl = document.getElementById('chart-status')!;
+      statusEl.innerHTML = '';
+      const statusColors: Record<string, string> = { 'Em andamento': 'bg-blue-500', 'Ganho': 'bg-green-500', 'Perdido': 'bg-red-500' };
+      for (const [k, v] of Object.entries(data.byStatus as Record<string,number>)) {
+        const pct = Math.round((v as number)/data.total*100);
+        statusEl.innerHTML += '<div class="flex items-center gap-2"><span class="text-sm w-28">'+k+'</span><div class="flex-1 h-5 bg-muted rounded overflow-hidden"><div class="h-full '+ (statusColors[k]||'bg-gray-400') +' rounded" style="width:'+pct+'%"></div></div><span class="text-sm font-mono w-8 text-right">'+v+'</span><span class="text-xs text-muted-foreground w-10">'+pct+'%</span></div>';
+      }
+
+      // Stage chart
+      const stageEl = document.getElementById('chart-stage')!;
+      stageEl.innerHTML = '';
+      const maxStage = Math.max(...Object.values(data.byStage as Record<string,number>), 1);
+      for (const [k, v] of Object.entries(data.byStage as Record<string,number>)) {
+        const pct = Math.round((v as number)/maxStage*100);
+        const label = k.replace(/_/g, ' ');
+        stageEl.innerHTML += '<div class="flex items-center gap-2"><span class="text-sm w-28">'+label+'</span><div class="flex-1 h-5 bg-muted rounded overflow-hidden"><div class="h-full bg-purple-500 rounded" style="width:'+pct+'%"></div></div><span class="text-sm font-mono w-8 text-right">'+v+'</span></div>';
+      }
+
+      // Source chart
+      const sourceEl = document.getElementById('chart-source')!;
+      sourceEl.innerHTML = '';
+      const sortedSources = Object.entries(data.bySource as Record<string,number>).sort((a,b) => (b[1] as number) - (a[1] as number));
+      for (const [k, v] of sortedSources) {
+        const pct = Math.round((v as number)/data.total*100);
+        sourceEl.innerHTML += '<div class="flex items-center gap-2"><span class="text-sm w-20">'+k+'</span><div class="flex-1 h-4 bg-muted rounded overflow-hidden"><div class="h-full bg-emerald-500 rounded" style="width:'+pct+'%"></div></div><span class="text-sm font-mono w-6 text-right">'+v+'</span></div>';
+      }
+    } catch (err) {
+      document.getElementById('report-dashboard')!.innerHTML = '<p class="text-red-500">Erro ao carregar dados.</p>';
+    }
+  }
+  loadDashboard();
+</script>

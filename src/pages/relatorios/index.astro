@@ -1,0 +1,41 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+---
+
+<BaseLayout title="Relatórios — Tracking Lab" description="Painel de relatórios do CRM">
+  <div class="space-y-6">
+    <h1 class="text-3xl font-bold tracking-tight">📊 Relatórios</h1>
+    <p class="text-muted-foreground max-w-2xl">
+      Dados do CRM Agendor consolidados em dashboards. Selecione um relatório abaixo:
+    </p>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
+      <a href="/relatorios/dashboard"
+         class="rounded-xl border bg-card p-6 hover:border-primary/50 hover:shadow-md transition-all">
+        <div class="text-3xl mb-3">📈</div>
+        <h2 class="text-lg font-semibold mb-1">Dashboard</h2>
+        <p class="text-sm text-muted-foreground">
+          Visão geral: total de negociações, status, origem dos leads e valor total.
+        </p>
+      </a>
+
+      <a href="/relatorios/funil"
+         class="rounded-xl border bg-card p-6 hover:border-primary/50 hover:shadow-md transition-all">
+        <div class="text-3xl mb-3">🔽</div>
+        <h2 class="text-lg font-semibold mb-1">Funil de Vendas</h2>
+        <p class="text-sm text-muted-foreground">
+          Matriz estágio × status com detalhes de cada negociação.
+        </p>
+      </a>
+
+      <a href="/relatorios/marketing"
+         class="rounded-xl border bg-card p-6 hover:border-primary/50 hover:shadow-md transition-all">
+        <div class="text-3xl mb-3">📣</div>
+        <h2 class="text-lg font-semibold mb-1">Marketing (UTM)</h2>
+        <p class="text-sm text-muted-foreground">
+          Atribuição de canais: origem, mídia e campanhas que mais convertem.
+        </p>
+      </a>
+    </div>
+  </div>
+</BaseLayout>

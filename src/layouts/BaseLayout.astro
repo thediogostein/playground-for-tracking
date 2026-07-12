@@ -47,6 +47,16 @@ const { title, description = "Site para estudo de tracking com GTM" } = Astro.pr
         >
           Contato
         </a>
+        <a
+          href="/relatorios"
+          class={`text-sm font-medium transition-colors hover:text-primary ${
+            Astro.url.pathname.startsWith("/relatorios")
+              ? "text-primary border-b-2 border-primary pb-0.5"
+              : "text-muted-foreground"
+          }`}
+        >
+          Relatórios
+        </a>
       </nav>
     </header>
 

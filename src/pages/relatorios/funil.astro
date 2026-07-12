@@ -1,0 +1,95 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+---
+
+<BaseLayout title="Funil de Vendas — Relatórios" description="Matriz estágio × status">
+  <div class="space-y-6">
+    <div class="flex items-center gap-4">
+      <a href="/relatorios" class="text-sm text-muted-foreground hover:text-primary transition-colors">&larr; Relatórios</a>
+      <h1 class="text-3xl font-bold tracking-tight">🔽 Funil de Vendas</h1>
+    </div>
+
+    <div id="report-funnel" class="space-y-6">
+      <!-- Matrix table -->
+      <div class="rounded-xl border bg-card p-5 overflow-x-auto">
+        <h2 class="font-semibold mb-4">Matriz Estágio × Status</h2>
+        <div id="funnel-matrix"></div>
+      </div>
+
+      <!-- Deals table -->
+      <div class="rounded-xl border bg-card p-5 overflow-x-auto">
+        <h2 class="font-semibold mb-4">Negociações</h2>
+        <div id="funnel-details"></div>
+      </div>
+    </div>
+  </div>
+</BaseLayout>
+
+<script>
+  const statusColors: Record<string, string> = {
+    'Em andamento': 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+    'Ganho': 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+    'Perdido': 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
+  };
+
+  async function loadFunnel() {
+    try {
+      const res = await fetch('/api/reports?type=funnel');
+      const data = await res.json();
+
+      if (data.error) { document.getElementById('report-funnel')!.innerHTML = '<p class="text-red-500">Erro: '+data.error+'</p>'; return; }
+
+      // Matrix
+      const matrixEl = document.getElementById('funnel-matrix')!;
+      let html = '<table class="w-full text-sm"><thead><tr><th class="text-left p-2 border-b">Estágio</th>';
+      for (const s of data.statusOrder) html += '<th class="text-center p-2 border-b">'+s+'</th>';
+      html += '<th class="text-center p-2 border-b font-bold">Total</th></tr></thead><tbody>';
+
+      const totals: Record<string, number> = {};
+      for (const s of data.statusOrder) totals[s] = 0;
+
+      for (const stage of data.stageOrder) {
+        html += '<tr><td class="p-2 border-b font-medium">'+stage.replace(/_/g,' ')+'</td>';
+        let rowTotal = 0;
+        for (const status of data.statusOrder) {
+          const v = (data.matrix[stage] && data.matrix[stage][status]) || 0;
+          totals[status] += v;
+          rowTotal += v;
+          html += '<td class="text-center p-2 border-b">'+(v > 0 ? '<span class="font-bold">'+v+'</span>' : '0')+'</td>';
+        }
+        html += '<td class="text-center p-2 border-b font-bold">'+rowTotal+'</td></tr>';
+      }
+
+      // Total row
+      html += '<tr class="bg-muted/50"><td class="p-2 font-bold">TOTAL</td>';
+      let grandTotal = 0;
+      for (const s of data.statusOrder) {
+        html += '<td class="text-center p-2 font-bold">'+totals[s]+'</td>';
+        grandTotal += totals[s];
+      }
+      html += '<td class="text-center p-2 font-bold">'+grandTotal+'</td></tr>';
+      html += '</tbody></table>';
+      matrixEl.innerHTML = html;
+
+      // Details table
+      const detailsEl = document.getElementById('funnel-details')!;
+      let dhtml = '<table class="w-full text-sm"><thead><tr><th class="text-left p-2 border-b">Negociação</th><th class="text-left p-2 border-b">Empresa</th><th class="text-center p-2 border-b">Estágio</th><th class="text-center p-2 border-b">Status</th><th class="text-center p-2 border-b">Valor</th><th class="text-left p-2 border-b">UTM Source</th></tr></thead><tbody>';
+      for (const d of data.details) {
+        const statusBadge = statusColors[d.status] || 'bg-gray-100';
+        dhtml += '<tr class="hover:bg-muted/30">';
+        dhtml += '<td class="p-2 border-b">'+d.title+'</td>';
+        dhtml += '<td class="p-2 border-b text-muted-foreground">'+(d.org||'—')+'</td>';
+        dhtml += '<td class="p-2 border-b text-center text-xs">'+d.stage.replace(/_/g,' ')+'</td>';
+        dhtml += '<td class="p-2 border-b text-center"><span class="px-2 py-0.5 rounded text-xs font-medium '+statusBadge+'">'+d.status+'</span></td>';
+        dhtml += '<td class="p-2 border-b text-center font-mono text-xs">'+(d.value > 0 ? 'R$ '+d.value : '—')+'</td>';
+        dhtml += '<td class="p-2 border-b text-xs text-muted-foreground">'+d.utm_source+'</td>';
+        dhtml += '</tr>';
+      }
+      dhtml += '</tbody></table>';
+      detailsEl.innerHTML = dhtml;
+    } catch (err) {
+      document.getElementById('report-funnel')!.innerHTML = '<p class="text-red-500">Erro ao carregar dados.</p>';
+    }
+  }
+  loadFunnel();
+</script>
