@@ -299,6 +299,63 @@ export const onRequestPost: PagesFunction = async (context) => {
     }
   }
 
+  // ---- Create deal in Agendor CRM (if configured) ----
+  const agendorToken = (context.env as any).AGENDOR_API_TOKEN;
+  if (agendorToken) {
+    try {
+      // Create organization
+      const orgRes = await fetch("https://api.agendor.com.br/v3/organizations", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${agendorToken}`,
+        },
+        body: JSON.stringify({
+          name: submission.company,
+          contacts: [
+            {
+              name: submission.name,
+              emails: [{ email: submission.email }],
+              phones: [{ number: submission.whatsapp, type: "whatsapp" }],
+            },
+          ],
+        }),
+      });
+      const orgData = await orgRes.json() as { data?: { id: number } };
+      if (orgData.data?.id) {
+        console.log("[contact] Agendor organization created:", orgData.data.id);
+
+        // Create deal linked to organization
+        await fetch("https://api.agendor.com.br/v3/deals", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${agendorToken}`,
+          },
+          body: JSON.stringify({
+            title: `${submission.name} - ${submission.company}`,
+            organizationId: orgData.data.id,
+            funnelId: 900827,
+            value: submission.revenue,
+            contact: {
+              name: submission.name,
+              emails: [{ email: submission.email }],
+              phones: [{ number: submission.whatsapp, type: "whatsapp" }],
+            },
+          }),
+        });
+        console.log("[contact] Agendor deal created");
+      }
+    } catch (agendorErr) {
+      console.error("[contact] Agendor integration failed:", agendorErr);
+    }
+  }
+      console.log("[contact] Saved to Google Sheets");
+    } catch (sheetErr) {
+      console.error("[contact] Google Sheets save failed:", sheetErr);
+    }
+  }
+
   // ---- Respond ----
   return new Response(
     JSON.stringify({
