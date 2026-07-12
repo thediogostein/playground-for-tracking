@@ -144,6 +144,8 @@ export const onRequestPost: PagesFunction = async (context) => {
   const referer = request.headers.get("referer") || "";
   const allowedOrigins = [
     "https://playground-for-tracking.pages.dev",
+    "https://webwizardry101.com",
+    "https://www.webwizardry101.com",
     "http://localhost:4321",
     "http://localhost:4322",
     "http://127.0.0.1:4321",
@@ -231,12 +233,52 @@ export const onRequestPost: PagesFunction = async (context) => {
     timestamp: new Date().toISOString(),
   };
 
-  // ---- Store or send (placeholder) ----
-  // For now, log it. In production you would:
-  // - Store in KV: await context.env.CONTACT_SUBMISSIONS.put(...)
-  // - Send email: await context.env.EMAIL.send(...)
-  // - Store in D1: await context.env.DB.prepare(...).bind(...).run()
+  // ---- Store & send email notification ----
   console.log("[contact] New submission:", JSON.stringify(submission));
+
+  const notifyEmail = (context.env as any).NOTIFICATION_EMAIL;
+  const cloudflareToken = (context.env as any).CLOUDFLARE_API_TOKEN;
+  const accountId = (context.env as any).CLOUDFLARE_ACCOUNT_ID;
+
+  // Try Cloudflare Email Sending if configured
+  if (notifyEmail && cloudflareToken && accountId) {
+    try {
+      const emailResult = await fetch(
+        `https://api.cloudflare.com/client/v4/accounts/${accountId}/email/sending/send`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${cloudflareToken}`,
+          },
+          body: JSON.stringify({
+            from: { address: `contato@webwizardry101.com`, name: "Tracking Lab" },
+            to: [{ address: notifyEmail }],
+            subject: `Novo contato: ${submission.name} - ${submission.company}`,
+            html: `
+              <h2>Novo formulário de contato</h2>
+              <table>
+                <tr><td><strong>Nome:</strong></td><td>${submission.name}</td></tr>
+                <tr><td><strong>WhatsApp:</strong></td><td>${submission.whatsapp}</td></tr>
+                <tr><td><strong>Email:</strong></td><td>${submission.email}</td></tr>
+                <tr><td><strong>Empresa:</strong></td><td>${submission.company}</td></tr>
+                <tr><td><strong>Faturamento:</strong></td><td>${submission.revenue}</td></tr>
+                <tr><td><strong>IP:</strong></td><td>${submission.ip}</td></tr>
+                <tr><td><strong>Data:</strong></td><td>${submission.timestamp}</td></tr>
+              </table>
+            `,
+            text: `Novo contato de ${submission.name} (${submission.company})\nWhatsApp: ${submission.whatsapp}\nEmail: ${submission.email}\nFaturamento: ${submission.revenue}\nIP: ${submission.ip}\nData: ${submission.timestamp}`,
+          }),
+        },
+      );
+      const emailData = await emailResult.json() as { success: boolean; errors?: any[] };
+      console.log("[contact] Email send result:", JSON.stringify(emailData));
+    } catch (emailErr) {
+      console.error("[contact] Email send failed:", emailErr);
+    }
+  } else {
+    console.log("[contact] Email not configured. Set NOTIFICATION_EMAIL, CLOUDFLARE_API_TOKEN, and CLOUDFLARE_ACCOUNT_ID secrets.");
+  }
 
   // ---- Respond ----
   return new Response(
