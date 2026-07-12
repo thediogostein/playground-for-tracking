@@ -273,11 +273,18 @@ export const onRequestPost: PagesFunction = async (context) => {
               <tr><td><strong>Email:</strong></td><td>${submission.email}</td></tr>
               <tr><td><strong>Empresa:</strong></td><td>${submission.company}</td></tr>
               <tr><td><strong>Faturamento:</strong></td><td>${submission.revenue}</td></tr>
+              ${submission.utm_source ? `<tr><td colspan="2"><hr></td></tr><tr><td colspan="2"><strong>📊 UTM Tracking</strong></td></tr>` : ""}
+              ${submission.utm_source ? `<tr><td><strong>Source:</strong></td><td>${submission.utm_source}</td></tr>` : ""}
+              ${submission.utm_medium ? `<tr><td><strong>Medium:</strong></td><td>${submission.utm_medium}</td></tr>` : ""}
+              ${submission.utm_campaign ? `<tr><td><strong>Campaign:</strong></td><td>${submission.utm_campaign}</td></tr>` : ""}
+              ${submission.utm_term ? `<tr><td><strong>Term:</strong></td><td>${submission.utm_term}</td></tr>` : ""}
+              ${submission.utm_content ? `<tr><td><strong>Content:</strong></td><td>${submission.utm_content}</td></tr>` : ""}
+              <tr><td colspan="2"><hr></td></tr>
               <tr><td><strong>IP:</strong></td><td>${submission.ip}</td></tr>
               <tr><td><strong>Data:</strong></td><td>${submission.timestamp}</td></tr>
             </table>
           `,
-          text: `Novo contato de ${submission.name} (${submission.company})\nWhatsApp: ${submission.whatsapp}\nEmail: ${submission.email}\nFaturamento: ${submission.revenue}\nIP: ${submission.ip}\nData: ${submission.timestamp}`,
+          text: `Novo contato de ${submission.name} (${submission.company})\nWhatsApp: ${submission.whatsapp}\nEmail: ${submission.email}\nFaturamento: ${submission.revenue}${submission.utm_source ? `\n\nUTMs:\nSource: ${submission.utm_source}\nMedium: ${submission.utm_medium}\nCampaign: ${submission.utm_campaign}\nTerm: ${submission.utm_term}\nContent: ${submission.utm_content}` : ""}\n\nIP: ${submission.ip}\nData: ${submission.timestamp}`,
         }),
       });
       const emailData = await emailResult.json() as { id?: string; error?: any };
