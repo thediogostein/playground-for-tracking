@@ -350,11 +350,6 @@ export const onRequestPost: PagesFunction = async (context) => {
       console.error("[contact] Agendor integration failed:", agendorErr);
     }
   }
-      console.log("[contact] Saved to Google Sheets");
-    } catch (sheetErr) {
-      console.error("[contact] Google Sheets save failed:", sheetErr);
-    }
-  }
 
   // ---- Respond ----
   return new Response(
