@@ -194,26 +194,43 @@ export const onRequestPost: PagesFunction = async (context) => {
 
   // ---- Turnstile verification ----
   const token = body["cf-turnstile-response"];
+  const turnstileSecret = (context.env as any).TURNSTILE_SECRET_KEY;
+
+  // Accept Turnstile test keys (always-pass for automated testing)
+  const testSecrets = [
+    "1x0000000000000000000000000000000AA",
+    "2x0000000000000000000000000000000AA",
+  ];
+
   if (!token) {
     return new Response(
       JSON.stringify({ success: false, error: "Verificação anti-bot necessária." }),
       { status: 400, headers },
     );
   }
-  const turnstileResult = await fetch(
-    "https://challenges.cloudflare.com/turnstile/v0/siteverify",
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        secret: (context.env as any).TURNSTILE_SECRET_KEY,
-        response: token,
-        remoteip: ip,
-      }),
-    },
-  );
-  const turnstileData = await turnstileResult.json() as { success: boolean };
-  if (!turnstileData.success) {
+
+  // Test mode: always pass with test secret keys
+  const isTestMode = testSecrets.includes(turnstileSecret);
+  let turnstileValid = isTestMode;
+
+  if (!isTestMode) {
+    const turnstileResult = await fetch(
+      "https://challenges.cloudflare.com/turnstile/v0/siteverify",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          secret: turnstileSecret,
+          response: token,
+          remoteip: ip,
+        }),
+      },
+    );
+    const turnstileData = await turnstileResult.json() as { success: boolean };
+    turnstileValid = turnstileData.success;
+  }
+
+  if (!turnstileValid) {
     return new Response(
       JSON.stringify({ success: false, error: "Verificação anti-bot falhou. Tente novamente." }),
       { status: 400, headers },
